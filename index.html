@@ -1,0 +1,1035 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>如何選出基本面開始好轉的股票</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --blue: #2563eb;
+      --blue-light: #eff6ff;
+      --blue-mid: #bfdbfe;
+      --orange: #f97316;
+      --green: #16a34a;
+      --red: #dc2626;
+      --gray: #333333;
+      --gray-light: #f8fafc;
+      --gray-border: #e2e8f0;
+      --white: #ffffff;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans TC', sans-serif;
+      background: #0f172a;
+      color: var(--gray);
+      height: 100vh;
+      overflow: hidden;
+      line-height: 1.7;
+    }
+
+    /* Progress bar */
+    #progress-bar-wrap {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      height: 5px;
+      background: rgba(255,255,255,0.15);
+      z-index: 100;
+    }
+    #progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, var(--blue), var(--orange));
+      transition: width 0.4s ease;
+    }
+
+    /* Slide counter */
+    #slide-counter {
+      position: fixed;
+      top: 14px; right: 20px;
+      color: rgba(255,255,255,0.5);
+      font-size: 13px;
+      z-index: 100;
+      letter-spacing: 1px;
+    }
+
+    /* Slides container */
+    #slides {
+      width: 100%;
+      height: 100vh;
+      position: relative;
+    }
+
+    .slide {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 20px 20px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.5s ease, transform 0.5s ease;
+      transform: translateX(60px);
+    }
+    .slide.active {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateX(0);
+    }
+    .slide.exit {
+      opacity: 0;
+      transform: translateX(-60px);
+    }
+
+    .card {
+      background: var(--white);
+      border-radius: 20px;
+      padding: 48px 56px;
+      max-width: 900px;
+      width: 100%;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.4);
+      max-height: calc(100vh - 80px);
+      overflow-y: auto;
+    }
+
+    /* Slide-specific backgrounds */
+    .slide-0 { background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%); }
+    .slide-1 { background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%); }
+    .slide-last { background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%); }
+
+    /* Typography */
+    .slide-title {
+      font-size: clamp(26px, 4vw, 40px);
+      font-weight: 800;
+      color: var(--gray);
+      line-height: 1.2;
+      margin-bottom: 8px;
+    }
+    .slide-subtitle {
+      font-size: clamp(14px, 1.8vw, 17px);
+      color: #64748b;
+      margin-bottom: 28px;
+      padding-bottom: 20px;
+      border-bottom: 2px solid var(--gray-border);
+    }
+
+    /* Cover slide */
+    .cover-card {
+      background: linear-gradient(135deg, #1e40af 0%, #1d4ed8 50%, #2563eb 100%);
+      color: white;
+      text-align: center;
+      padding: 64px 56px;
+    }
+    .cover-badge {
+      display: inline-block;
+      background: rgba(255,255,255,0.2);
+      color: rgba(255,255,255,0.9);
+      font-size: 13px;
+      padding: 6px 18px;
+      border-radius: 100px;
+      margin-bottom: 24px;
+      letter-spacing: 1px;
+    }
+    .cover-title {
+      font-size: clamp(28px, 5vw, 52px);
+      font-weight: 900;
+      color: white;
+      line-height: 1.15;
+      margin-bottom: 16px;
+    }
+    .cover-desc {
+      font-size: clamp(15px, 2vw, 19px);
+      color: rgba(255,255,255,0.8);
+      max-width: 560px;
+      margin: 0 auto 36px;
+    }
+    .cover-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+    }
+    .cover-tag {
+      background: rgba(255,255,255,0.15);
+      color: white;
+      font-size: 13px;
+      padding: 6px 16px;
+      border-radius: 100px;
+      border: 1px solid rgba(255,255,255,0.25);
+    }
+
+    /* Indicator number badge */
+    .indicator-number {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px; height: 40px;
+      background: var(--blue);
+      color: white;
+      font-size: 18px;
+      font-weight: 700;
+      border-radius: 10px;
+      margin-right: 12px;
+      flex-shrink: 0;
+    }
+    .indicator-header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .indicator-header-text h2 {
+      font-size: clamp(20px, 3vw, 28px);
+      font-weight: 800;
+      color: var(--gray);
+      line-height: 1.2;
+    }
+    .indicator-header-text small {
+      font-size: 13px;
+      color: #94a3b8;
+      font-style: italic;
+    }
+
+    /* Info boxes */
+    .info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+    @media (max-width: 600px) { .info-grid { grid-template-columns: 1fr; } }
+
+    .info-box {
+      background: var(--gray-light);
+      border-left: 4px solid var(--blue);
+      border-radius: 10px;
+      padding: 14px 16px;
+    }
+    .info-box.orange { border-left-color: var(--orange); }
+    .info-box.green  { border-left-color: var(--green); }
+    .info-box.red    { border-left-color: var(--red); }
+
+    .info-box-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      color: #94a3b8;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+    }
+    .info-box-value {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--gray);
+      margin-bottom: 4px;
+    }
+    .info-box-desc {
+      font-size: 13px;
+      color: #64748b;
+      line-height: 1.5;
+    }
+
+    /* Lists */
+    .check-list { list-style: none; }
+    .check-list li {
+      padding: 8px 0;
+      padding-left: 28px;
+      position: relative;
+      font-size: 15px;
+      color: var(--gray);
+      border-bottom: 1px solid var(--gray-border);
+    }
+    .check-list li:last-child { border-bottom: none; }
+    .check-list li::before {
+      content: '✓';
+      position: absolute;
+      left: 0;
+      color: var(--green);
+      font-weight: 700;
+    }
+
+    .warn-list { list-style: none; }
+    .warn-list li {
+      padding: 8px 0;
+      padding-left: 28px;
+      position: relative;
+      font-size: 15px;
+      color: var(--gray);
+      border-bottom: 1px solid var(--gray-border);
+    }
+    .warn-list li:last-child { border-bottom: none; }
+    .warn-list li::before {
+      content: '⚠';
+      position: absolute;
+      left: 0;
+      color: var(--orange);
+    }
+
+    /* Highlight callout */
+    .callout {
+      background: var(--blue-light);
+      border: 1px solid var(--blue-mid);
+      border-radius: 12px;
+      padding: 16px 20px;
+      margin-top: 18px;
+      font-size: 14px;
+      color: #1e3a8a;
+    }
+    .callout strong { color: var(--blue); }
+
+    /* Formula */
+    .formula-box {
+      background: #0f172a;
+      color: #7dd3fc;
+      font-family: 'Courier New', monospace;
+      font-size: 14px;
+      border-radius: 10px;
+      padding: 16px 20px;
+      margin: 14px 0;
+      letter-spacing: 0.5px;
+    }
+
+    /* Flow diagram */
+    .flow {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      margin-top: 10px;
+    }
+    .flow-step {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--gray-border);
+    }
+    .flow-step:last-child { border-bottom: none; }
+    .flow-num {
+      width: 32px; height: 32px;
+      background: var(--blue);
+      color: white;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 14px;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+    .flow-text strong {
+      display: block;
+      font-size: 15px;
+      color: var(--gray);
+      margin-bottom: 3px;
+    }
+    .flow-text span {
+      font-size: 13px;
+      color: #64748b;
+    }
+
+    /* Summary table */
+    .summary-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+      margin-top: 10px;
+    }
+    .summary-table th {
+      background: var(--blue);
+      color: white;
+      padding: 10px 14px;
+      text-align: left;
+      font-weight: 700;
+    }
+    .summary-table th:first-child { border-radius: 8px 0 0 0; }
+    .summary-table th:last-child { border-radius: 0 8px 0 0; }
+    .summary-table td {
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--gray-border);
+      vertical-align: top;
+    }
+    .summary-table tr:nth-child(even) td { background: var(--gray-light); }
+    .summary-table tr:last-child td { border-bottom: none; }
+
+    .tag {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 100px;
+      letter-spacing: 0.5px;
+    }
+    .tag-high { background: #dcfce7; color: #15803d; }
+    .tag-mid  { background: #fef9c3; color: #a16207; }
+
+    /* Nav buttons (draggable) */
+    #nav-buttons {
+      position: fixed;
+      bottom: 32px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 14px;
+      z-index: 200;
+      cursor: grab;
+      user-select: none;
+    }
+    #nav-buttons:active { cursor: grabbing; }
+
+    .nav-btn {
+      width: 52px; height: 52px;
+      border-radius: 50%;
+      border: none;
+      background: rgba(255,255,255,0.12);
+      backdrop-filter: blur(10px);
+      color: white;
+      font-size: 22px;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.15s;
+      display: flex; align-items: center; justify-content: center;
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+    .nav-btn:hover { background: rgba(255,255,255,0.25); transform: scale(1.08); }
+    .nav-btn:disabled { opacity: 0.3; cursor: not-allowed; transform: none; }
+
+    /* Dot indicators */
+    #dots {
+      position: fixed;
+      bottom: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 7px;
+      z-index: 200;
+    }
+    .dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.25);
+      transition: all 0.3s;
+      cursor: pointer;
+    }
+    .dot.active {
+      background: white;
+      width: 22px;
+      border-radius: 4px;
+    }
+
+    /* Scrollbar */
+    .card::-webkit-scrollbar { width: 5px; }
+    .card::-webkit-scrollbar-track { background: transparent; }
+    .card::-webkit-scrollbar-thumb { background: var(--blue-mid); border-radius: 3px; }
+  </style>
+</head>
+<body>
+
+<div id="progress-bar-wrap"><div id="progress-bar"></div></div>
+<div id="slide-counter"></div>
+
+<div id="slides">
+
+  <!-- SLIDE 0: Cover -->
+  <div class="slide slide-0 active" data-index="0">
+    <div class="card cover-card">
+      <div class="cover-badge">股票研究方法論</div>
+      <div class="cover-title">如何選出<br>基本面開始好轉的股票</div>
+      <div class="cover-desc">從財務數據中找到「由壞轉好」的訊號，在市場反映之前提早布局</div>
+      <div class="cover-tags">
+        <span class="cover-tag">📊 8 大核心指標</span>
+        <span class="cover-tag">🔍 篩選流程</span>
+        <span class="cover-tag">⚠️ 常見陷阱</span>
+        <span class="cover-tag">💡 實戰應用</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 1: 什麼是基本面好轉 -->
+  <div class="slide slide-1" data-index="1">
+    <div class="card">
+      <div class="slide-title">什麼是「基本面開始好轉」？</div>
+      <div class="slide-subtitle">核心概念：企業的財務健康度正在從谷底回升</div>
+      <div class="info-grid">
+        <div class="info-box">
+          <div class="info-box-label">核心定義</div>
+          <div class="info-box-value">由壞轉好的轉折點</div>
+          <div class="info-box-desc">不是追最好的公司，而是找到「正在變好」的公司——因為市場通常會提前反映預期改善</div>
+        </div>
+        <div class="info-box orange">
+          <div class="info-box-label">為什麼有效？</div>
+          <div class="info-box-value">市場定價滯後</div>
+          <div class="info-box-desc">基本面好轉往往需要 1–3 季才被市場充分定價，早期布局有更大的上漲空間</div>
+        </div>
+        <div class="info-box green">
+          <div class="info-box-label">適合的股票</div>
+          <div class="info-box-value">困境反轉型</div>
+          <div class="info-box-desc">曾經業績下滑、股價低迷，但產業或公司本身出現明確改善訊號的標的</div>
+        </div>
+        <div class="info-box red">
+          <div class="info-box-label">最大風險</div>
+          <div class="info-box-value">假反轉 / 死貓彈</div>
+          <div class="info-box-desc">一季好轉未必是趨勢，需多指標交叉確認，避免「接到下墜的刀子」</div>
+        </div>
+      </div>
+      <div class="callout">
+        <strong>選股邏輯：</strong>不買「現在最好」的公司，買「<strong>正在變好、市場還沒完全反映</strong>」的公司。<br>
+        關鍵在於比市場早一步察覺財務數據的轉折訊號。
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 2: 指標一 營收成長率 -->
+  <div class="slide" data-index="2">
+    <div class="card">
+      <div class="indicator-header">
+        <div class="indicator-number">1</div>
+        <div class="indicator-header-text">
+          <h2>營收成長率（Revenue Growth Rate）</h2>
+          <small>最直觀的業務擴張訊號</small>
+        </div>
+      </div>
+      <div class="info-grid">
+        <div class="info-box">
+          <div class="info-box-label">觀察重點</div>
+          <div class="info-box-value">年增率（YoY）由負轉正</div>
+          <div class="info-box-desc">連續 2 季以上營收年增率回到正數，代表業務需求回溫</div>
+        </div>
+        <div class="info-box orange">
+          <div class="info-box-label">進階版</div>
+          <div class="info-box-value">月增率（MoM）連續改善</div>
+          <div class="info-box-desc">每月營收環比持續成長，代表短期訂單動能在加速，領先年增率</div>
+        </div>
+      </div>
+      <div class="formula-box">
+        營收年增率 = (本期營收 − 去年同期營收) ÷ 去年同期營收 × 100%
+        <br><br>
+        📌 好轉訊號：年增率從 -20% → -10% → 0% → +5% 的 逐步收斂
+      </div>
+      <ul class="check-list">
+        <li>季報或月報連續 2 個月以上出現正成長</li>
+        <li>衰退幅度逐季縮小（即使還是負的，斜率在改善）</li>
+        <li>新產品線或新市場帶動結構性成長（非一次性訂單）</li>
+      </ul>
+      <div class="callout">
+        <strong>注意：</strong>單季大幅拉高可能是季節性或一次性因素。建議搭配 <strong>近 3～6 個月的趨勢</strong>一起判斷。
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 3: 指標二 毛利率 -->
+  <div class="slide" data-index="3">
+    <div class="card">
+      <div class="indicator-header">
+        <div class="indicator-number">2</div>
+        <div class="indicator-header-text">
+          <h2>毛利率（Gross Margin）改善</h2>
+          <small>獲利品質比數量更重要</small>
+        </div>
+      </div>
+      <div class="info-grid">
+        <div class="info-box green">
+          <div class="info-box-label">好轉訊號</div>
+          <div class="info-box-value">毛利率持續回升</div>
+          <div class="info-box-desc">代表定價能力提升、原物料成本下降、或產品組合往高毛利品項移動</div>
+        </div>
+        <div class="info-box red">
+          <div class="info-box-label">警示訊號</div>
+          <div class="info-box-value">營收成長但毛利率下滑</div>
+          <div class="info-box-desc">可能是用低價搶單，成長品質差，未來獲利壓力大</div>
+        </div>
+      </div>
+      <div class="formula-box">
+        毛利率 = (營收 − 銷貨成本) ÷ 營收 × 100%
+        <br><br>
+        📌 好轉訊號：毛利率連續 2 季回升，且回到過去 3 年均值以上
+      </div>
+      <ul class="check-list">
+        <li>原物料成本下降，毛利率擴張（原料密集型行業）</li>
+        <li>產品漲價或高階產品比例提升</li>
+        <li>產能利用率（Utilization Rate）回升，固定成本攤薄</li>
+        <li>毛利率回到歷史均值或超過同業水準</li>
+      </ul>
+      <div class="callout">
+        <strong>觀察技巧：</strong>同時看「<strong>毛利率</strong>」和「<strong>毛利額</strong>」，若毛利率提升且毛利額也在成長，是雙重確認的強力好轉訊號。
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 4: 指標三 EPS -->
+  <div class="slide" data-index="4">
+    <div class="card">
+      <div class="indicator-header">
+        <div class="indicator-number">3</div>
+        <div class="indicator-header-text">
+          <h2>每股盈餘（EPS）由負轉正</h2>
+          <small>Earnings Per Share — 獲利能力的直接體現</small>
+        </div>
+      </div>
+      <div class="info-grid">
+        <div class="info-box">
+          <div class="info-box-label">最強訊號</div>
+          <div class="info-box-value">EPS 虧轉盈</div>
+          <div class="info-box-desc">公司從虧損重新獲利，往往是股價強力上漲的催化劑</div>
+        </div>
+        <div class="info-box orange">
+          <div class="info-box-label">次級訊號</div>
+          <div class="info-box-value">EPS 年增率加速</div>
+          <div class="info-box-desc">即使還是正的，若 EPS 成長速度在加速（例如 +5% → +15% → +30%），代表動能增強</div>
+        </div>
+      </div>
+      <div class="formula-box">
+        EPS = 稅後淨利 ÷ 流通在外股數
+        <br><br>
+        📌 EPS 超預期（Beat）：實際 EPS > 分析師預估 EPS → 短期股價上漲動力強
+      </div>
+      <ul class="check-list">
+        <li>EPS 從虧損轉為獲利（最強的基本面好轉訊號）</li>
+        <li>EPS 年增率連續加速（動能型好轉）</li>
+        <li>EPS 超過分析師預期（市場共識上修）</li>
+        <li>非經常性損益排除後（<strong>核心 EPS</strong>）依然改善</li>
+      </ul>
+      <div class="callout">
+        <strong>陷阱提醒：</strong>注意是否靠「<strong>業外收益</strong>（如賣地、賣股）」帶動 EPS，而非本業改善。核心業務的獲利改善才是真訊號。
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 5: 指標四 自由現金流 -->
+  <div class="slide" data-index="5">
+    <div class="card">
+      <div class="indicator-header">
+        <div class="indicator-number">4</div>
+        <div class="indicator-header-text">
+          <h2>自由現金流（Free Cash Flow, FCF）</h2>
+          <small>「現金為王」—— 最不容易造假的財務指標</small>
+        </div>
+      </div>
+      <div class="info-grid">
+        <div class="info-box green">
+          <div class="info-box-label">好轉訊號</div>
+          <div class="info-box-value">FCF 由負轉正</div>
+          <div class="info-box-desc">公司真正開始產生現金，可用於還債、回購、配息，代表業務進入良性循環</div>
+        </div>
+        <div class="info-box">
+          <div class="info-box-label">更進一步</div>
+          <div class="info-box-value">FCF 連續增長</div>
+          <div class="info-box-desc">持續的 FCF 增長代表獲利品質優良，公司能自給自足而不依賴外部融資</div>
+        </div>
+      </div>
+      <div class="formula-box">
+        自由現金流（FCF）= 營業現金流 − 資本支出（CAPEX）
+        <br><br>
+        📌 注意：高成長期公司會主動增加 CAPEX，FCF 為負不一定是壞事；<br>
+           但若 FCF 從負轉正，代表擴張期已過、進入收穫期
+      </div>
+      <ul class="check-list">
+        <li>FCF 轉正且持續改善（連續 2 季以上）</li>
+        <li>FCF yield（FCF ÷ 市值）開始上升，估值相對吸引</li>
+        <li>應收帳款與存貨下降（現金回收效率提升）</li>
+      </ul>
+      <div class="callout">
+        <strong>為何重要：</strong>EPS 可以被「會計手段」調整，但現金流幾乎不能造假。FCF 改善是比 EPS 更可靠的獲利品質指標。
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 6: 指標五 ROE -->
+  <div class="slide" data-index="6">
+    <div class="card">
+      <div class="indicator-header">
+        <div class="indicator-number">5</div>
+        <div class="indicator-header-text">
+          <h2>股東權益報酬率（ROE）回升</h2>
+          <small>Return on Equity — 資金使用效率的核心指標</small>
+        </div>
+      </div>
+      <div class="info-grid">
+        <div class="info-box">
+          <div class="info-box-label">觀察重點</div>
+          <div class="info-box-value">ROE 趨勢回升</div>
+          <div class="info-box-desc">ROE 從低點開始連續 2 季以上回升，代表公司資本使用效率在改善</div>
+        </div>
+        <div class="info-box orange">
+          <div class="info-box-label">搭配指標</div>
+          <div class="info-box-value">ROA 同步改善</div>
+          <div class="info-box-desc">資產報酬率（Return on Assets）改善，代表不是靠財務槓桿而是真實獲利提升</div>
+        </div>
+      </div>
+      <div class="formula-box">
+        ROE = 稅後淨利 ÷ 股東權益 × 100%
+        <br>
+        ROA = 稅後淨利 ÷ 總資產 × 100%
+        <br><br>
+        📌 好轉標準：ROE 連續 2 季上升，且回升至 10% 以上（高品質企業基準）
+      </div>
+      <ul class="check-list">
+        <li>ROE 從低點（如 2～5%）持續回升至 10%+</li>
+        <li>ROE 改善由「淨利率提升」驅動（而非財務槓桿增加）</li>
+        <li>ROE 優於同業且差距在縮小或擴大</li>
+      </ul>
+      <div class="callout">
+        <strong>DuPont 分析：</strong>ROE = 淨利率 × 資產周轉率 × 財務槓桿。<br>
+        最健康的 ROE 改善來自「<strong>淨利率提升</strong>」或「<strong>資產周轉率改善</strong>」，而非單純加槓桿。
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 7: 指標六 負債比率 -->
+  <div class="slide" data-index="7">
+    <div class="card">
+      <div class="indicator-header">
+        <div class="indicator-number">6</div>
+        <div class="indicator-header-text">
+          <h2>負債比率（Debt Ratio）下降</h2>
+          <small>財務結構改善 — 降低系統性風險</small>
+        </div>
+      </div>
+      <div class="info-grid">
+        <div class="info-box green">
+          <div class="info-box-label">好轉訊號</div>
+          <div class="info-box-value">負債比率下降</div>
+          <div class="info-box-desc">負債佔總資產比例下滑，代表公司財務壓力減輕，違約風險降低</div>
+        </div>
+        <div class="info-box">
+          <div class="info-box-label">觀察指標</div>
+          <div class="info-box-value">利息覆蓋率提升</div>
+          <div class="info-box-desc">EBIT ÷ 利息費用，比率越高代表還款壓力越小，超過 3 倍為安全基準</div>
+        </div>
+      </div>
+      <div class="formula-box">
+        負債比率 = 總負債 ÷ 總資產 × 100%
+        淨負債比率 = (有息負債 − 現金) ÷ 股東權益
+        利息覆蓋率（ICR）= EBIT ÷ 利息費用
+        <br><br>
+        📌 好轉標準：負債比率由 &gt;60% 逐步降回 40～50% 以下
+      </div>
+      <ul class="check-list">
+        <li>公司主動還款，降低有息負債</li>
+        <li>再融資利率下降（代表市場對公司信用評等改善）</li>
+        <li>流動比率（Current Ratio）&gt; 1.5，短期償債無虞</li>
+        <li>現金及約當現金餘額增加</li>
+      </ul>
+      <div class="callout">
+        <strong>特別注意：</strong>高負債公司在景氣好轉時彈性最大（財務槓桿效應），但同時風險也最高。<br>
+        財務結構改善往往是「重轉型」股票的最後一塊拼圖。
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 8: 指標七 法人動向 -->
+  <div class="slide" data-index="8">
+    <div class="card">
+      <div class="indicator-header">
+        <div class="indicator-number">7</div>
+        <div class="indicator-header-text">
+          <h2>法人買超 ／ 內部人增持</h2>
+          <small>Smart Money 的行為是最好的領先指標</small>
+        </div>
+      </div>
+      <div class="info-grid">
+        <div class="info-box">
+          <div class="info-box-label">台股適用</div>
+          <div class="info-box-value">三大法人買超</div>
+          <div class="info-box-desc">外資、投信、自營商持續買進，代表機構投資人認同基本面改善故事</div>
+        </div>
+        <div class="info-box orange">
+          <div class="info-box-label">最強訊號</div>
+          <div class="info-box-value">內部人公開增持</div>
+          <div class="info-box-desc">董事、大股東在公開市場買股，代表他們比任何人都更確信公司將好轉</div>
+        </div>
+      </div>
+      <ul class="check-list">
+        <li>外資連續 5～10 個交易日買超，且買超金額逐漸增加</li>
+        <li>投信開始建立核心持倉（非短線操作）</li>
+        <li>內部人（Insider）在低檔增持持股（公開申報資料可查）</li>
+        <li>股東人數下降（籌碼集中化，老手換手給長線投資者）</li>
+      </ul>
+      <div class="formula-box">
+        📌 查詢工具：
+        台股 → 公開資訊觀測站 / 籌碼 K 線 / 股狗網
+        美股 → SEC EDGAR (Form 4) / OpenInsider.com
+      </div>
+      <div class="callout">
+        <strong>邏輯：</strong>法人有研究團隊深入追蹤公司，其持續買進本身就是一種「基本面好轉」的驗證。但法人也會錯，需搭配其他指標交叉確認。
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 9: 指標八 分析師上修 -->
+  <div class="slide" data-index="9">
+    <div class="card">
+      <div class="indicator-header">
+        <div class="indicator-number">8</div>
+        <div class="indicator-header-text">
+          <h2>分析師預估上修（Analyst Revision）</h2>
+          <small>市場共識開始改變的早期訊號</small>
+        </div>
+      </div>
+      <div class="info-grid">
+        <div class="info-box green">
+          <div class="info-box-label">好轉訊號</div>
+          <div class="info-box-value">EPS 預估上修</div>
+          <div class="info-box-desc">分析師調升未來 1～2 年的 EPS 預估，代表他們認為公司獲利動能在改善</div>
+        </div>
+        <div class="info-box">
+          <div class="info-box-label">更強訊號</div>
+          <div class="info-box-value">評級調升 + 目標價提高</div>
+          <div class="info-box-desc">分析師從 Hold 升至 Buy，且調高目標價，代表市場共識正在從悲觀轉向樂觀</div>
+        </div>
+      </div>
+      <ul class="check-list">
+        <li>近 90 天內，多家分析師調升 EPS 預估（而非調降）</li>
+        <li>分析師評級從「賣出」→「中立」→「買進」的演變</li>
+        <li>法說會後立即出現多份上修報告（管理層指引轉佳）</li>
+        <li>未來 12 個月目標價中位數高於目前股價 20%+</li>
+      </ul>
+      <div class="formula-box">
+        📌 查詢工具：
+        台股 → CMoney / 元大 / 凱基研究報告
+        美股 → Seeking Alpha / Visible Alpha / Refinitiv
+      </div>
+      <div class="callout">
+        <strong>注意方向性：</strong>「<strong>上修幅度</strong>」比「預估的絕對數字」更重要。若市場共識 EPS 預估在過去 3 個月上修超過 <strong>10%</strong>，是明確的好轉訊號。
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 10: 綜合篩選流程 -->
+  <div class="slide" data-index="10">
+    <div class="card">
+      <div class="slide-title">綜合篩選流程</div>
+      <div class="slide-subtitle">建議依序執行，層層過濾降低假訊號機率</div>
+      <div class="flow">
+        <div class="flow-step">
+          <div class="flow-num">1</div>
+          <div class="flow-text">
+            <strong>第一關：量化初篩</strong>
+            <span>營收年增率轉正、毛利率回升、EPS 預估上修 → 任意 2 項達標即進入下一關</span>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-num">2</div>
+          <div class="flow-text">
+            <strong>第二關：現金流驗證</strong>
+            <span>檢查 FCF 是否同步改善，排除「EPS 好看但現金流惡化」的陷阱</span>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-num">3</div>
+          <div class="flow-text">
+            <strong>第三關：財務結構確認</strong>
+            <span>負債比率穩定或下降，流動比率 &gt; 1.5，確認公司不會在好轉前就資金斷鏈</span>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-num">4</div>
+          <div class="flow-text">
+            <strong>第四關：籌碼與共識確認</strong>
+            <span>法人近期買超、分析師上修預估 → 確認「Smart Money」也認同好轉故事</span>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-num">5</div>
+          <div class="flow-text">
+            <strong>第五關：評估性價比</strong>
+            <span>計算 Forward P/E、PEG 比率，確認股價尚未完全反映好轉預期，仍有上漲空間</span>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-num">6</div>
+          <div class="flow-text">
+            <strong>進場與停損設定</strong>
+            <span>設定明確的停損條件（如：連續 2 季財報不如預期、法人轉為賣超），管理風險</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 11: 指標總覽表 -->
+  <div class="slide" data-index="11">
+    <div class="card">
+      <div class="slide-title">8 大指標總覽</div>
+      <div class="slide-subtitle">優先度與觀察頻率參考</div>
+      <table class="summary-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>指標名稱</th>
+            <th>好轉訊號</th>
+            <th>優先度</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>1</strong></td>
+            <td>營收成長率 (Revenue YoY)</td>
+            <td>年增率由負轉正，連續 2 季</td>
+            <td><span class="tag tag-high">高</span></td>
+          </tr>
+          <tr>
+            <td><strong>2</strong></td>
+            <td>毛利率 (Gross Margin)</td>
+            <td>連續 2 季回升，回到歷史均值</td>
+            <td><span class="tag tag-high">高</span></td>
+          </tr>
+          <tr>
+            <td><strong>3</strong></td>
+            <td>每股盈餘 (EPS)</td>
+            <td>由虧轉盈，或成長加速</td>
+            <td><span class="tag tag-high">高</span></td>
+          </tr>
+          <tr>
+            <td><strong>4</strong></td>
+            <td>自由現金流 (FCF)</td>
+            <td>FCF 由負轉正</td>
+            <td><span class="tag tag-high">高</span></td>
+          </tr>
+          <tr>
+            <td><strong>5</strong></td>
+            <td>股東權益報酬率 (ROE)</td>
+            <td>連續回升，趨向 10% 以上</td>
+            <td><span class="tag tag-mid">中</span></td>
+          </tr>
+          <tr>
+            <td><strong>6</strong></td>
+            <td>負債比率 (Debt Ratio)</td>
+            <td>逐季下降，利息覆蓋率提升</td>
+            <td><span class="tag tag-mid">中</span></td>
+          </tr>
+          <tr>
+            <td><strong>7</strong></td>
+            <td>法人動向 (Smart Money)</td>
+            <td>三大法人買超、內部人增持</td>
+            <td><span class="tag tag-high">高</span></td>
+          </tr>
+          <tr>
+            <td><strong>8</strong></td>
+            <td>分析師上修 (Analyst Revision)</td>
+            <td>90 天內 EPS 預估上修 10%+</td>
+            <td><span class="tag tag-mid">中</span></td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="callout" style="margin-top:16px;">
+        <strong>建議：</strong>8 大指標中，<strong>至少 5 項</strong>同時出現好轉訊號，才是可信度高的「基本面好轉」標的。
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 12: 常見陷阱 -->
+  <div class="slide slide-last" data-index="12">
+    <div class="card">
+      <div class="slide-title">⚠️ 常見陷阱與風險提示</div>
+      <div class="slide-subtitle">好訊號不等於萬無一失，這些情況要特別小心</div>
+      <ul class="warn-list">
+        <li><strong>假反轉（Dead Cat Bounce）：</strong>單季好轉可能只是基期低或一次性效果，需持續觀察 2 季以上</li>
+        <li><strong>業外美化 EPS：</strong>賣廠房、賣子公司拉高淨利，但本業持續惡化，必須剔除非核心收益</li>
+        <li><strong>過早進場：</strong>基本面好轉但股價仍在下跌，代表市場還不信任，等待技術面確認更安全</li>
+        <li><strong>忽視產業景氣：</strong>個股好轉但整個產業仍在下行，逆風太強難以突圍</li>
+        <li><strong>財務槓桿陷阱：</strong>高負債公司看起來 ROE 改善，但可能只是加槓桿而非真實獲利提升</li>
+        <li><strong>法說會「說得好、做得差」：</strong>管理層預期指引（Guidance）過度樂觀，後續連續下修</li>
+        <li><strong>倖存者偏誤：</strong>只記得成功的「困境反轉」案例，忘記更多真的就倒閉的公司</li>
+      </ul>
+      <div class="callout">
+        <strong>核心原則：</strong>沒有任何單一指標能保證買在底部。<br>
+        多指標交叉確認 + 嚴格停損紀律，才是長期勝率的來源。
+      </div>
+    </div>
+  </div>
+
+</div><!-- #slides -->
+
+<!-- Draggable nav buttons -->
+<div id="nav-buttons">
+  <button class="nav-btn" id="btn-prev" onclick="changeSlide(-1)" title="上一頁 (←)">&#8592;</button>
+  <button class="nav-btn" id="btn-next" onclick="changeSlide(1)" title="下一頁 (→)">&#8594;</button>
+</div>
+
+<div id="dots"></div>
+
+<script>
+  const slides = document.querySelectorAll('.slide');
+  const total = slides.length;
+  let current = 0;
+
+  // Build dots
+  const dotsWrap = document.getElementById('dots');
+  slides.forEach((_, i) => {
+    const d = document.createElement('div');
+    d.className = 'dot' + (i === 0 ? ' active' : '');
+    d.onclick = () => goTo(i);
+    dotsWrap.appendChild(d);
+  });
+
+  function goTo(n) {
+    slides[current].classList.remove('active');
+    slides[current].classList.add('exit');
+    setTimeout(() => slides[current >= 0 ? current : 0].classList.remove('exit'), 500);
+
+    const prev = current;
+    current = Math.max(0, Math.min(n, total - 1));
+
+    slides[current].classList.add('active');
+    slides[prev].classList.remove('active');
+    setTimeout(() => slides[prev].classList.remove('exit'), 500);
+
+    updateUI();
+  }
+
+  function changeSlide(dir) { goTo(current + dir); }
+
+  function updateUI() {
+    // Progress bar
+    document.getElementById('progress-bar').style.width = ((current / (total - 1)) * 100) + '%';
+    // Counter
+    document.getElementById('slide-counter').textContent = (current + 1) + ' / ' + total;
+    // Buttons
+    document.getElementById('btn-prev').disabled = current === 0;
+    document.getElementById('btn-next').disabled = current === total - 1;
+    // Dots
+    document.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === current));
+  }
+
+  // Keyboard
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') changeSlide(1);
+    if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   changeSlide(-1);
+  });
+
+  // Draggable nav
+  const nav = document.getElementById('nav-buttons');
+  let dragging = false, ox, oy, sx, sy;
+  nav.addEventListener('mousedown', e => {
+    if (e.target.tagName === 'BUTTON') return;
+    dragging = true;
+    const r = nav.getBoundingClientRect();
+    ox = e.clientX - r.left; oy = e.clientY - r.top;
+    nav.style.transition = 'none';
+    nav.style.cursor = 'grabbing';
+  });
+  document.addEventListener('mousemove', e => {
+    if (!dragging) return;
+    const x = e.clientX - ox;
+    const y = e.clientY - oy;
+    nav.style.left = x + 'px';
+    nav.style.top = y + 'px';
+    nav.style.bottom = 'auto';
+    nav.style.transform = 'none';
+  });
+  document.addEventListener('mouseup', () => {
+    dragging = false;
+    nav.style.cursor = 'grab';
+  });
+
+  // Touch swipe
+  let touchX = null;
+  document.addEventListener('touchstart', e => { touchX = e.touches[0].clientX; });
+  document.addEventListener('touchend', e => {
+    if (touchX === null) return;
+    const dx = e.changedTouches[0].clientX - touchX;
+    if (Math.abs(dx) > 50) changeSlide(dx < 0 ? 1 : -1);
+    touchX = null;
+  });
+
+  updateUI();
+</script>
+</body>
+</html>
