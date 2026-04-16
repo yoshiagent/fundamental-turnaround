@@ -296,6 +296,47 @@
       border: 1px solid #1e3a5a;
     }
 
+    /* XQ XS Code block */
+    .xs-wrap {
+      margin-top: 18px;
+    }
+    .xs-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: #34d399;
+      margin-bottom: 8px;
+    }
+    .xs-label::before {
+      content: '';
+      display: inline-block;
+      width: 8px; height: 8px;
+      background: #34d399;
+      border-radius: 50%;
+    }
+    .xs-code-box {
+      background: #071a10;
+      color: #6ee7b7;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      border-radius: 10px;
+      padding: 16px 20px;
+      line-height: 1.8;
+      letter-spacing: 0.3px;
+      border: 1px solid #1a4030;
+      white-space: pre;
+      overflow-x: auto;
+    }
+    .xs-code-box .cmt { color: #4b7a60; }
+    .xs-code-box .kw  { color: #34d399; font-weight: 700; }
+    .xs-code-box .fn  { color: #a7f3d0; }
+    .xs-code-box .num { color: #fcd34d; }
+    .xs-code-box .sig { color: #fb923c; font-weight: 700; }
+
     /* Flow diagram */
     .flow {
       display: flex;
@@ -518,6 +559,18 @@
       <div class="callout">
         <strong>注意：</strong>單季大幅拉高可能是季節性或一次性因素。建議搭配 <strong>近 3～6 個月的趨勢</strong>一起判斷。
       </div>
+      <div class="xs-wrap">
+        <div class="xs-label">XQ XS Code｜資料頻率：月</div>
+        <div class="xs-code-box"><span class="cmt">// ── 指標①：營收年增率 ─────────────────────────────────</span>
+<span class="fn">MthRev</span>   <span class="kw">:=</span> MTHSALES;                           <span class="cmt">// 當月營收</span>
+<span class="fn">MthRevLY</span> <span class="kw">:=</span> <span class="fn">REF</span>(MTHSALES, <span class="num">12</span>);               <span class="cmt">// 去年同月</span>
+<span class="fn">YOY</span>      <span class="kw">:=</span> (MthRev - MthRevLY) / MthRevLY * <span class="num">100</span>; <span class="cmt">// 年增率(%)</span>
+
+<span class="cmt">// 衰退收斂判斷：斜率連續改善中（即使仍負值也算好轉）</span>
+<span class="fn">Improve</span>  <span class="kw">:=</span> YOY &gt; <span class="fn">REF</span>(YOY,<span class="num">1</span>) <span class="kw">AND</span> <span class="fn">REF</span>(YOY,<span class="num">1</span>) &gt; <span class="fn">REF</span>(YOY,<span class="num">2</span>);
+
+<span class="kw">RETURN</span> YOY, <span class="fn">COLORIF</span>(YOY&gt;=<span class="num">0</span>, RED, GREEN);</div>
+      </div>
     </div>
   </div>
 
@@ -556,6 +609,22 @@
       </ul>
       <div class="callout">
         <strong>觀察技巧：</strong>同時看「<strong>毛利率</strong>」和「<strong>毛利額</strong>」，若毛利率提升且毛利額也在成長，是雙重確認的強力好轉訊號。
+      </div>
+      <div class="xs-wrap">
+        <div class="xs-label">XQ XS Code｜資料頻率：季</div>
+        <div class="xs-code-box"><span class="cmt">// ── 指標②：毛利率 ────────────────────────────────────</span>
+<span class="fn">GP</span>  <span class="kw">:=</span> GROSSPROFIT;           <span class="cmt">// 毛利</span>
+<span class="fn">Rev</span> <span class="kw">:=</span> SALES;                 <span class="cmt">// 營收</span>
+<span class="fn">GM</span>  <span class="kw">:=</span> GP / Rev * <span class="num">100</span>;         <span class="cmt">// 毛利率(%)</span>
+
+<span class="cmt">// 近3年(12季)均值，判斷是否回到歷史水準</span>
+<span class="fn">GM_AVG</span>   <span class="kw">:=</span> <span class="fn">MA</span>(GM, <span class="num">12</span>);
+<span class="fn">AboveAvg</span> <span class="kw">:=</span> GM &gt; GM_AVG;
+
+<span class="cmt">// 好轉：連續2季回升</span>
+<span class="fn">Rising</span> <span class="kw">:=</span> GM &gt; <span class="fn">REF</span>(GM,<span class="num">1</span>) <span class="kw">AND</span> <span class="fn">REF</span>(GM,<span class="num">1</span>) &gt; <span class="fn">REF</span>(GM,<span class="num">2</span>);
+
+<span class="kw">RETURN</span> GM, <span class="fn">COLORIF</span>(Rising, RED, GREEN);</div>
       </div>
     </div>
   </div>
@@ -596,6 +665,21 @@
       <div class="callout">
         <strong>陷阱提醒：</strong>注意是否靠「<strong>業外收益</strong>（如賣地、賣股）」帶動 EPS，而非本業改善。核心業務的獲利改善才是真訊號。
       </div>
+      <div class="xs-wrap">
+        <div class="xs-label">XQ XS Code｜資料頻率：季</div>
+        <div class="xs-code-box"><span class="cmt">// ── 指標③：EPS 年增率 ────────────────────────────────</span>
+<span class="fn">EPS_Q</span>  <span class="kw">:=</span> EPS;                                     <span class="cmt">// 當季EPS</span>
+<span class="fn">EPS_LY</span> <span class="kw">:=</span> <span class="fn">REF</span>(EPS, <span class="num">4</span>);                            <span class="cmt">// 去年同季EPS</span>
+<span class="fn">YOY</span>    <span class="kw">:=</span> (EPS_Q - EPS_LY) / (<span class="fn">ABS</span>(EPS_LY) + <span class="num">0.001</span>) * <span class="num">100</span>;
+
+<span class="cmt">// 最強訊號：虧轉盈</span>
+<span class="sig">TurnPos</span> <span class="kw">:=</span> EPS_Q &gt; <span class="num">0</span> <span class="kw">AND</span> <span class="fn">REF</span>(EPS_Q,<span class="num">1</span>) &lt;= <span class="num">0</span>;
+
+<span class="cmt">// 次級訊號：年增率連續加速</span>
+<span class="fn">Accel</span>   <span class="kw">:=</span> YOY &gt; <span class="fn">REF</span>(YOY,<span class="num">1</span>) <span class="kw">AND</span> <span class="fn">REF</span>(YOY,<span class="num">1</span>) &gt; <span class="fn">REF</span>(YOY,<span class="num">2</span>);
+
+<span class="kw">RETURN</span> EPS_Q, <span class="fn">COLORIF</span>(EPS_Q&gt;=<span class="num">0</span>, RED, GREEN);</div>
+      </div>
     </div>
   </div>
 
@@ -634,6 +718,21 @@
       </ul>
       <div class="callout">
         <strong>為何重要：</strong>EPS 可以被「會計手段」調整，但現金流幾乎不能造假。FCF 改善是比 EPS 更可靠的獲利品質指標。
+      </div>
+      <div class="xs-wrap">
+        <div class="xs-label">XQ XS Code｜資料頻率：季</div>
+        <div class="xs-code-box"><span class="cmt">// ── 指標④：自由現金流 FCF ───────────────────────────</span>
+<span class="fn">CFO</span>  <span class="kw">:=</span> OCASHFLOW;              <span class="cmt">// 營業現金流</span>
+<span class="fn">CAPX</span> <span class="kw">:=</span> CAPEXFLOW;              <span class="cmt">// 資本支出（XQ回傳負值）</span>
+<span class="fn">FCF</span>  <span class="kw">:=</span> CFO + CAPX;              <span class="cmt">// 自由現金流 = CFO - CAPEX</span>
+
+<span class="cmt">// 由負轉正（最強好轉訊號）</span>
+<span class="sig">TurnPos</span> <span class="kw">:=</span> FCF &gt; <span class="num">0</span> <span class="kw">AND</span> <span class="fn">REF</span>(FCF,<span class="num">1</span>) &lt;= <span class="num">0</span>;
+
+<span class="cmt">// 連續改善</span>
+<span class="fn">Rising</span>  <span class="kw">:=</span> FCF &gt; <span class="fn">REF</span>(FCF,<span class="num">1</span>) <span class="kw">AND</span> <span class="fn">REF</span>(FCF,<span class="num">1</span>) &gt; <span class="fn">REF</span>(FCF,<span class="num">2</span>);
+
+<span class="kw">RETURN</span> FCF / <span class="num">1E8</span>, <span class="fn">COLORIF</span>(FCF&gt;=<span class="num">0</span>, RED, GREEN); <span class="cmt">// 單位：億元</span></div>
       </div>
     </div>
   </div>
@@ -675,6 +774,23 @@
       <div class="callout">
         <strong>DuPont 分析：</strong>ROE = 淨利率 × 資產周轉率 × 財務槓桿。<br>
         最健康的 ROE 改善來自「<strong>淨利率提升</strong>」或「<strong>資產周轉率改善</strong>」，而非單純加槓桿。
+      </div>
+      <div class="xs-wrap">
+        <div class="xs-label">XQ XS Code｜資料頻率：季</div>
+        <div class="xs-code-box"><span class="cmt">// ── 指標⑤：ROE 回升 ─────────────────────────────────</span>
+<span class="fn">NI</span>  <span class="kw">:=</span> NETINCOME;               <span class="cmt">// 稅後淨利</span>
+<span class="fn">SE</span>  <span class="kw">:=</span> EQUITY;                  <span class="cmt">// 股東權益</span>
+<span class="fn">TA</span>  <span class="kw">:=</span> TOTALASSET;              <span class="cmt">// 總資產</span>
+<span class="fn">ROE</span> <span class="kw">:=</span> NI / SE * <span class="num">100</span>;            <span class="cmt">// ROE(%)</span>
+<span class="fn">ROA</span> <span class="kw">:=</span> NI / TA * <span class="num">100</span>;            <span class="cmt">// ROA(%) — 同步確認非槓桿驅動</span>
+
+<span class="cmt">// 好轉：連續2季上升</span>
+<span class="fn">Rising</span> <span class="kw">:=</span> ROE &gt; <span class="fn">REF</span>(ROE,<span class="num">1</span>) <span class="kw">AND</span> <span class="fn">REF</span>(ROE,<span class="num">1</span>) &gt; <span class="fn">REF</span>(ROE,<span class="num">2</span>);
+
+<span class="cmt">// 突破高品質門檻</span>
+<span class="sig">Target</span> <span class="kw">:=</span> ROE &gt;= <span class="num">10</span> <span class="kw">AND</span> ROA &gt;= <span class="num">5</span>;
+
+<span class="kw">RETURN</span> ROE, <span class="fn">COLORIF</span>(ROE&gt;=<span class="num">10</span>, RED, GREEN);</div>
       </div>
     </div>
   </div>
@@ -718,6 +834,24 @@
         <strong>特別注意：</strong>高負債公司在景氣好轉時彈性最大（財務槓桿效應），但同時風險也最高。<br>
         財務結構改善往往是「重轉型」股票的最後一塊拼圖。
       </div>
+      <div class="xs-wrap">
+        <div class="xs-label">XQ XS Code｜資料頻率：季</div>
+        <div class="xs-code-box"><span class="cmt">// ── 指標⑥：負債比率 + 利息覆蓋率 ───────────────────</span>
+<span class="fn">TL</span>  <span class="kw">:=</span> TOTALLIAB;               <span class="cmt">// 總負債</span>
+<span class="fn">TA</span>  <span class="kw">:=</span> TOTALASSET;              <span class="cmt">// 總資產</span>
+<span class="fn">DR</span>  <span class="kw">:=</span> TL / TA * <span class="num">100</span>;            <span class="cmt">// 負債比率(%)</span>
+
+<span class="cmt">// 利息覆蓋率 ICR（Interest Coverage Ratio）</span>
+<span class="fn">EBIT</span> <span class="kw">:=</span> OPINCOME;               <span class="cmt">// 營業利益（EBIT近似值）</span>
+<span class="fn">INT</span>  <span class="kw">:=</span> INTERESTEXP;             <span class="cmt">// 利息費用</span>
+<span class="fn">ICR</span>  <span class="kw">:=</span> EBIT / (<span class="fn">ABS</span>(INT) + <span class="num">0.001</span>); <span class="cmt">// 安全門檻 > 3 倍</span>
+
+<span class="cmt">// 好轉：負債比率連續下降</span>
+<span class="fn">Decline</span> <span class="kw">:=</span> DR &lt; <span class="fn">REF</span>(DR,<span class="num">1</span>) <span class="kw">AND</span> <span class="fn">REF</span>(DR,<span class="num">1</span>) &lt; <span class="fn">REF</span>(DR,<span class="num">2</span>);
+<span class="sig">Safe</span>    <span class="kw">:=</span> ICR &gt; <span class="num">3</span> <span class="kw">AND</span> Decline;
+
+<span class="kw">RETURN</span> DR, <span class="fn">COLORIF</span>(Decline, GREEN, RED);</div>
+      </div>
     </div>
   </div>
 
@@ -757,6 +891,25 @@
       <div class="callout">
         <strong>邏輯：</strong>法人有研究團隊深入追蹤公司，其持續買進本身就是一種「基本面好轉」的驗證。但法人也會錯，需搭配其他指標交叉確認。
       </div>
+      <div class="xs-wrap">
+        <div class="xs-label">XQ XS Code｜資料頻率：日</div>
+        <div class="xs-code-box"><span class="cmt">// ── 指標⑦：三大法人合計買超 ────────────────────────</span>
+<span class="fn">Foreign</span> <span class="kw">:=</span> FNETBUY;              <span class="cmt">// 外資買超(張)</span>
+<span class="fn">Trust</span>   <span class="kw">:=</span> INETBUY;              <span class="cmt">// 投信買超(張)</span>
+<span class="fn">Dealer</span>  <span class="kw">:=</span> DNETBUY;              <span class="cmt">// 自營商買超(張)</span>
+<span class="fn">InstNet</span> <span class="kw">:=</span> Foreign + Trust + Dealer; <span class="cmt">// 三大法人合計</span>
+
+<span class="cmt">// 累計5日買超（觀察持續性）</span>
+<span class="fn">InstNet5</span> <span class="kw">:=</span> <span class="fn">SUM</span>(InstNet, <span class="num">5</span>);
+
+<span class="cmt">// 外資連續買超天數</span>
+<span class="fn">FBullDays</span> <span class="kw">:=</span> <span class="fn">BARSLAST</span>(Foreign &lt; <span class="num">0</span>) + <span class="num">1</span>;
+
+<span class="cmt">// 強力訊號：三大同步買超且連續5日累計為正</span>
+<span class="sig">Bullish</span> <span class="kw">:=</span> InstNet &gt; <span class="num">0</span> <span class="kw">AND</span> InstNet5 &gt; <span class="num">0</span>;
+
+<span class="kw">RETURN</span> InstNet, <span class="fn">COLORIF</span>(InstNet&gt;=<span class="num">0</span>, RED, GREEN);</div>
+      </div>
     </div>
   </div>
 
@@ -795,6 +948,24 @@
       </div>
       <div class="callout">
         <strong>注意方向性：</strong>「<strong>上修幅度</strong>」比「預估的絕對數字」更重要。若市場共識 EPS 預估在過去 3 個月上修超過 <strong>10%</strong>，是明確的好轉訊號。
+      </div>
+      <div class="xs-wrap">
+        <div class="xs-label">XQ XS Code｜資料頻率：季　※ XQ 無內建法人預估欄位，以下為替代指標</div>
+        <div class="xs-code-box"><span class="cmt">// ── 指標⑧：EPS 超預期替代指標 ──────────────────────</span>
+<span class="cmt">// ※ XQ 目前無分析師共識預估欄位，以近期均值模擬隱含預期</span>
+<span class="fn">EPS_Q</span>   <span class="kw">:=</span> EPS;                  <span class="cmt">// 當季EPS</span>
+<span class="fn">EPS_MA4</span> <span class="kw">:=</span> <span class="fn">MA</span>(EPS, <span class="num">4</span>);            <span class="cmt">// 近4季均值（視為隱含市場預期）</span>
+
+<span class="cmt">// 超預期：當季EPS高於近期均值</span>
+<span class="sig">Beat</span>    <span class="kw">:=</span> EPS_Q &gt; EPS_MA4;
+
+<span class="cmt">// EPS連續3季加速成長（上修趨勢替代觀察）</span>
+<span class="fn">Accel</span>   <span class="kw">:=</span> EPS_Q      &gt; <span class="fn">REF</span>(EPS_Q,<span class="num">1</span>) <span class="kw">AND</span>
+            <span class="fn">REF</span>(EPS_Q,<span class="num">1</span>) &gt; <span class="fn">REF</span>(EPS_Q,<span class="num">2</span>) <span class="kw">AND</span>
+            <span class="fn">REF</span>(EPS_Q,<span class="num">2</span>) &gt; <span class="fn">REF</span>(EPS_Q,<span class="num">3</span>);
+
+<span class="kw">RETURN</span> EPS_Q, <span class="fn">COLORIF</span>(Beat, RED, GREEN);
+<span class="cmt">// ※ 建議搭配 CMoney 法人預估模組取得真實共識預估值</span></div>
       </div>
     </div>
   </div>
